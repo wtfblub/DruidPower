@@ -98,9 +98,3 @@ function DruidPower.Utils:GetMaxRankSpell(buffIndex)
 
     return nil
 end
-
-function DruidPower.Utils:ClearTable(table)
-    for k in pairs(table) do
-        table[k] = nil
-    end
-end

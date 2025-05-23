@@ -481,6 +481,7 @@ function DruidPower:UIUpdatePlayer(player, isRosterUpdate)
             for _, v in pairs(players) do
                 if v:IsShown() then
                     frame:Show()
+                    break
                 end
             end
         end

@@ -87,7 +87,6 @@ function DruidPower:UNIT_AURA(event, target, info)
         return
     end
 
-
     if not info.isFullUpdate then
         player.buffs = player.buffs or {}
         player.buffsByInstanceId = player.buffsByInstanceId or {}
@@ -162,7 +161,7 @@ end
 function DruidPower:RosterUpdate()
     if InCombatLockdown() then return end
 
-    self.roster = {}
+    table.wipe(self.roster)
 
     if IsInRaid() then
         local groupPositionCounter = {}
@@ -179,7 +178,6 @@ function DruidPower:RosterUpdate()
                 self.roster[i] = {
                     guid = UnitGUID("raid" .. i),
                     id = "raid" .. i,
-                    rosterId = i,
                     name = name,
                     group = group,
                     memberIndex = 6 - groupPositionCounter[group], -- substract from 6 to reverse order
@@ -279,8 +277,8 @@ end
 function DruidPower:ScanUnitBuffs(player)
     player.buffs = player.buffs or {}
     player.buffsByInstanceId = player.buffsByInstanceId or {}
-    self.Utils:ClearTable(player.buffs)
-    self.Utils:ClearTable(player.buffsByInstanceId)
+    table.wipe(player.buffs)
+    table.wipe(player.buffsByInstanceId)
 
     for buffIndex, allBuffRanks in pairs(DruidPower.Constants.Buffs) do
         local aura
@@ -303,7 +301,9 @@ function DruidPower:ScanUnit(player)
     player.buffsByInstanceId = player.buffsByInstanceId or {}
     player.online = UnitIsConnected(player.id)
     player.isDead = UnitIsDeadOrGhost(player.id)
-    player.role = UnitGroupRolesAssigned(player.id)
+    if not IsInRaid() then
+        player.role = UnitGroupRolesAssigned(player.id)
+    end
     player.isInRange = IsSpellInRange(DruidPower.Constants.BuffSpellInfos[DRUIDPOWER_BUFFINDEX_MARK][1].name, player.id) ==
         1
     player.isVisible = UnitIsVisible(player.id)

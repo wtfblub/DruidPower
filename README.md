@@ -21,10 +21,11 @@ Raid/Group Druid buff helper. Heavily inspired by PallyPower.
 Clicking on the group frame will rotate its target through the group members on each click. It ignores people that are out of range, dead, afk or offline.
 
 ### Player Frame
-- The `R` is the range indicator
+- `R` is the range indicator
   - Green: In range
-  - Yellow: Out of spell range but in render range, alive and online
-  - Red: Dead, offline or not in render range
+  - Yellow: Out of spell range but in render range
+  - Red: Out of range
+- `D` indicates that player is dead
 - `OFF` indicates that the player is offline
 - Tanks have a shield icon
 - Duration of `00:00` means the target has the buff but the client does not supply its duration, usually happens when the target is not in render range
