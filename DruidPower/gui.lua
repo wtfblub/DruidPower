@@ -164,7 +164,7 @@ function DruidPower:UICreateGroupButton(group, parent, point, relativeTo, relati
                 player:RegisterAutoHide(0.05)
                 player:AddToAutoHide(self)
                 for _, player2 in pairs(players) do
-                    if player ~= player2 then
+                    if player ~= player2 and player2:GetAttribute("Active") then
                         player:AddToAutoHide(player2)
                     end
                 end
