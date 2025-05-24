@@ -512,7 +512,7 @@ function DruidPower:UIUpdatePlayer(player, isRosterUpdate)
         frame.statusText:Hide()
     end
 
-    if player.role == "maintank" or player.role == "TANK" then
+    if player.role == "MAINTANK" or player.role == "TANK" then
         frame.roleIcon:Show()
     else
         frame.roleIcon:Hide()
