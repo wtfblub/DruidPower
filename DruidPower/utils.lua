@@ -12,19 +12,17 @@ function DruidPower.Utils:ShortenPlayerName(str)
     return self:ShortenString(str, 11)
 end
 
-function DruidPower.Utils:FindBuffBySpellId(unitId, spellId)
+function DruidPower.Utils:GetUnitBuffs(unitId)
+    local auras = {}
     local i = 1
     local aura = C_UnitAuras.GetBuffDataByIndex(unitId, i)
     while aura do
-        if aura.spellId == spellId then
-            return aura
-        end
-
+        auras[aura.spellId] = aura
         i = i + 1
         aura = C_UnitAuras.GetBuffDataByIndex(unitId, i)
     end
 
-    return nil
+    return auras
 end
 
 function DruidPower.Utils:GetBuffDurationLeft(aura)
@@ -97,4 +95,50 @@ function DruidPower.Utils:GetMaxRankSpell(buffIndex)
     end
 
     return nil
+end
+
+function DruidPower.Utils:PerformanceProfile(name)
+    local t = {
+        name = name,
+        startTime = 0,
+        totalTime = 0,
+    }
+    if DruidPower.debugPerf then
+        t.startTime = GetTimePreciseSec() * 1000
+    end
+
+    function t:Elapsed()
+        if not DruidPower.debugPerf then
+            return 0
+        end
+        return (GetTimePreciseSec() * 1000) - self.startTime
+    end
+
+    function t:Report()
+        if DruidPower.debugPerf then
+            DruidPower:Print("PROFILE <" .. t.name .. "> " .. self:Elapsed() .. "ms")
+        end
+    end
+
+    function t:ReportTotal()
+        if DruidPower.debugPerf then
+            DruidPower:Print("PROFILE <" .. t.name .. "> " .. self.totalTime .. "ms")
+        end
+    end
+
+    function t:Restart()
+        if DruidPower.debugPerf then
+            self.startTime = GetTimePreciseSec() * 1000
+        end
+    end
+
+    function t:Add()
+        self.totalTime = self.totalTime + self:Elapsed()
+    end
+
+    function t:TotalTime()
+        return self.totalTime
+    end
+
+    return t
 end

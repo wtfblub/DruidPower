@@ -6,6 +6,8 @@ DruidPower = LibStub("AceAddon-3.0"):NewAddon(
 local AceGUI = LibStub("AceGUI-3.0")
 
 function DruidPower:OnInitialize()
+    self.debug = false
+    self.debugPerf = false
     self.settings = LibStub("AceDB-3.0"):New("DruidPowerDB", DruidPower.Constants.DefaultOptions, true)
     self.assignments = LibStub("AceDB-3.0"):New("DruidPowerAssignments", DruidPower.Constants.DefaultAssignmentOptions,
         true)
@@ -161,6 +163,10 @@ end
 function DruidPower:RosterUpdate()
     if InCombatLockdown() then return end
 
+    local rosterUpdatePerf = DruidPower.Utils:PerformanceProfile("RosterUpdate")
+    local scanUnitBuffsPerf = DruidPower.Utils:PerformanceProfile("ScanUnitBuffs_Total")
+    local scanUnitPerf = DruidPower.Utils:PerformanceProfile("ScanUnit_Total")
+
     table.wipe(self.roster)
 
     if IsInRaid() then
@@ -186,8 +192,14 @@ function DruidPower:RosterUpdate()
                     isDead = isDead,
                     role = role,
                 }
+
+                scanUnitBuffsPerf:Restart()
                 self:ScanUnitBuffs(self.roster[i])
+                scanUnitBuffsPerf:Add()
+
+                scanUnitPerf:Restart()
                 self:ScanUnit(self.roster[i])
+                scanUnitPerf:Add()
             end
         end
     else
@@ -204,8 +216,13 @@ function DruidPower:RosterUpdate()
                         memberIndex = i + 1,
                         class = class,
                     }
+                    scanUnitBuffsPerf:Restart()
                     self:ScanUnitBuffs(self.roster[i + 1])
+                    scanUnitBuffsPerf:Add()
+
+                    scanUnitPerf:Restart()
                     self:ScanUnit(self.roster[i + 1])
+                    scanUnitPerf:Add()
                 end
             end
         end
@@ -218,8 +235,13 @@ function DruidPower:RosterUpdate()
             memberIndex = 1,
             class = UnitClass("player"),
         }
+        scanUnitBuffsPerf:Restart()
         self:ScanUnitBuffs(self.roster[1])
+        scanUnitBuffsPerf:Add()
+
+        scanUnitPerf:Restart()
         self:ScanUnit(self.roster[1])
+        scanUnitPerf:Add()
     end
 
     -- assign each member an index for the ui so the ui wont show holes when a group isnt full
@@ -271,7 +293,13 @@ function DruidPower:RosterUpdate()
         end
     end
 
+    rosterUpdatePerf:Report()
+    scanUnitBuffsPerf:ReportTotal()
+    scanUnitPerf:ReportTotal()
+
+    local uiRosterUpdatePerf = DruidPower.Utils:PerformanceProfile("UIRosterUpdate")
     self:UIRosterUpdate()
+    uiRosterUpdatePerf:Report()
 end
 
 function DruidPower:ScanUnitBuffs(player)
@@ -280,10 +308,11 @@ function DruidPower:ScanUnitBuffs(player)
     table.wipe(player.buffs)
     table.wipe(player.buffsByInstanceId)
 
+    local auras = DruidPower.Utils:GetUnitBuffs(player.id)
     for buffIndex, allBuffRanks in pairs(DruidPower.Constants.Buffs) do
         local aura
         for _, buffId in pairs(allBuffRanks) do
-            aura = self.Utils:FindBuffBySpellId(player.id, buffId)
+            aura = auras[buffId]
             if aura then
                 break
             end
