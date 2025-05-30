@@ -1,33 +1,45 @@
 DruidPower.Constants = {}
 
-
-DruidPower.Constants.DefaultOptions = {
+DruidPower.Constants.DefaultDruidPowerDB = {
     profile = {
         showAnchor = true,
-        framePos = {
-            point = "CENTER",
-            x = 0,
-            y = 0,
+        colors = {
+            buffStateGood = { 0.0, 0.7, 0.0, 0.7 },
+            buffStateSome = { 1.0, 1.0, 0.5, 0.7 },
+            buffStateBad = { 1.0, 0.0, 0.0, 0.7 },
+            buffDurationGood = { 0.0, 1.0, 0.0, 1.0 },
+            buffDurationBad = { 1.0, 0.81, 0.29, 1.0 },
+            unitInRange = { 0.0, 1.0, 0.0, 1.0 },
+            unitVisible = { 1.0, 0.81, 0.29, 1.0 },
+            unitOutOfRange = { 1.0, 0.0, 0.0, 1.0 },
+            unitStatus = { 1.0, 0.0, 0.0, 1.0 },
+        },
+        gui = {
+            showNumMissing = true,
+            showGroupNumber = true,
+            position = {
+                point = "CENTER",
+                x = 0,
+                y = 0
+            },
+            style = {
+                font = "Friz Quadrata TT",
+                border = {
+                    texture = "Blizzard Dialog",
+                    size = 3,
+                    color = { 1.0, 1.0, 1.0, 1.0 },
+                },
+                background = {
+                    texture = "Blizzard Raid Bar",
+                }
+            },
         },
     }
 }
-DruidPower.Constants.DefaultAssignmentOptions = {
+
+DruidPower.Constants.DefaultDruidPowerAssignments = {
     profile = {
         thorns = {}
-    }
-}
-
-DruidPower.Constants.UI = {
-    Colors = {
-        MissingBuff = { 1.0, 0.0, 0.0, 0.95 },
-        HasBuff = { 0.0, 1.0, 0.0, 0.95 },
-        SomeHasBuff = { 1.0, 0.55, 0.19, 0.95 },
-        DurationGood = { 0.0, 1.0, 0.0, 1.0 },
-        DurationBad = { 1.0, 0.81, 0.29, 1.0 },
-        InRange = { 0.0, 1.0, 0.0, 1.0 },
-        Visible = { 1.0, 0.81, 0.29, 1.0 },
-        OutOfRange = { 1.0, 0.0, 0.0, 1.0 },
-        Status = { 1.0, 0.0, 0.0, 1.0 },
     }
 }
 

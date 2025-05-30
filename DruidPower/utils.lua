@@ -46,9 +46,9 @@ end
 function DruidPower.Utils:DurationColor(duration, maxDuration)
     local percent = math.max(0, math.min(1, duration / maxDuration))
     if percent > 0.5 then
-        return DruidPower.Constants.UI.Colors.DurationGood
+        return DruidPower.optionsDb.profile.colors.buffDurationGood
     else
-        return DruidPower.Constants.UI.Colors.DurationBad
+        return DruidPower.optionsDb.profile.colors.buffDurationBad
     end
 end
 
@@ -141,4 +141,17 @@ function DruidPower.Utils:PerformanceProfile(name)
     end
 
     return t
+end
+
+function DruidPower.Utils:CloneTable(src)
+    if type(src) == "table" then
+        local copy = {}
+        for key, value in next, src, nil do
+            copy[key] = DruidPower.Utils:CloneTable(value)
+        end
+
+        return copy
+    end
+
+    return src
 end

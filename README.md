@@ -31,5 +31,6 @@ Clicking on the group frame will rotate its target through the group members on 
 - Duration of `00:00` means the target has the buff but the client does not supply its duration, usually happens when the target is not in render range
 
 ## Chat Commands
-- `/druidpower` or `/druidpower anchor` Toggles the anchor on and off
-- `/druidpower reset` Moves the frame back to its default postion(center of the screen)
+- `/druidpower` Opens the options gui
+- `/druidpower anchor` Toggles the anchor on and off
+- `/druidpower reset` Reset all options to their default

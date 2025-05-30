@@ -1,19 +1,25 @@
+---@class DruidPower
 DruidPower = LibStub("AceAddon-3.0"):NewAddon(
     "DruidPower",
     "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0", "AceBucket-3.0"
 )
 
 local AceGUI = LibStub("AceGUI-3.0")
+local AceDB = LibStub("AceDB-3.0")
+local AceConfig = LibStub("AceConfig-3.0")
+local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
+local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 
 function DruidPower:OnInitialize()
     self.debug = false
     self.debugPerf = false
-    self.settings = LibStub("AceDB-3.0"):New("DruidPowerDB", DruidPower.Constants.DefaultOptions, true)
-    self.assignments = LibStub("AceDB-3.0"):New("DruidPowerAssignments", DruidPower.Constants.DefaultAssignmentOptions,
-        true)
+    self.optionsDb = AceDB:New("DruidPowerDB", DruidPower.Constants.DefaultDruidPowerDB, true)
+    self.assignmentsDb = AceDB:New("DruidPowerAssignments", DruidPower.Constants.DefaultDruidPowerAssignments, true)
+    AceConfig:RegisterOptionsTable(DruidPower.name, DruidPower.Constants.Options)
+    self.optionsFrame = LibStub("AceConfigDialog-3.0"):AddToBlizOptions(DruidPower.name)
     self.roster = {}
     self.isDruid = select(2, UnitClass("player")) == "DRUID"
-    self:RegisterChatCommand("druidpower", "OnCommand")
+    self:RegisterChatCommand(string.lower(DruidPower.name), "OnCommand")
 end
 
 function DruidPower:OnEnable()
@@ -58,24 +64,17 @@ function DruidPower:OnCommand(input)
         subcmd = string.lower(subcmd)
     end
 
-    if not subcmd or subcmd == "anchor" then
-        self.settings.profile.showAnchor = not self.settings.profile.showAnchor
-        if self.settings.profile.showAnchor then
-            self.UIMainFrame.header:Show()
-            local point, relativeTo, relativePoint, offsetX, offsetY = self.UIMainFrame.header:GetPoint()
-            local height = self.UIMainFrame.header:GetHeight()
-            self.UIMainFrame.header:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY + height)
-            self.settings.profile.framePos = { point = point, x = offsetX, y = offsetY + height }
-        else
-            self.UIMainFrame.header:Hide()
-            local point, relativeTo, relativePoint, offsetX, offsetY = self.UIMainFrame.header:GetPoint()
-            local height = self.UIMainFrame.header:GetHeight()
-            self.UIMainFrame.header:SetPoint(point, relativeTo, relativePoint, offsetX, offsetY - height)
-            self.settings.profile.framePos = { point = point, x = offsetX, y = offsetY - height }
-        end
+    if not subcmd then
+        AceConfigDialog:Open(DruidPower.name)
+    elseif subcmd == "anchor" then
+        self.optionsDb.profile.showAnchor = not self.optionsDb.profile.showAnchor
+        self:NotifyOptionChanged()
+        self:UIUpdateAnchor()
     elseif subcmd == "reset" then
+        self.optionsDb.profile = DruidPower.Utils:CloneTable(DruidPower.Constants.DefaultDruidPowerDB.profile)
         self.UIMainFrame.header:ClearAllPoints()
         self.UIMainFrame.header:SetPoint("CENTER", 0, 0)
+        ReloadUI()
     else
         self:Print("Available commands:")
         self:Print("/druidpower anchor > Toggles the anchor")
@@ -333,12 +332,11 @@ function DruidPower:ScanUnit(player)
     if not IsInRaid() then
         player.role = UnitGroupRolesAssigned(player.id)
     end
-    player.isInRange = IsSpellInRange(DruidPower.Constants.BuffSpellInfos[DRUIDPOWER_BUFFINDEX_MARK][1].name, player.id) ==
-        1
+    player.isInRange = IsSpellInRange(DruidPower.Constants.BuffSpellInfos[DRUIDPOWER_BUFFINDEX_MARK][1].name, player.id) == 1
     player.isVisible = UnitIsVisible(player.id)
     player.isAFK = UnitIsAFK(player.id)
 
-    player.thornsAssignment = self.assignments.profile.thorns[player.guid]
+    player.thornsAssignment = self.assignmentsDb.profile.thorns[player.guid]
     if player.thornsAssignment == nil then
         player.thornsAssignment = false
     end
@@ -379,7 +377,7 @@ function DruidPower:ToggleThornsAssignmentForUiGroup(uiGroupIndex)
     for _, player in pairs(self.roster) do
         if player.uiGroupIndex == uiGroupIndex then
             player.thornsAssignment = not player.thornsAssignment
-            self.assignments.profile.thorns[player.guid] = player.thornsAssignment
+            self.assignmentsDb.profile.thorns[player.guid] = player.thornsAssignment
         end
     end
 
@@ -390,9 +388,13 @@ function DruidPower:ToggleThornsAssignmentForUiPlayer(uiGroupIndex, uiMemberInde
     for _, player in pairs(self.roster) do
         if player.uiGroupIndex == uiGroupIndex and player.uiMemberIndex == uiMemberIndex then
             player.thornsAssignment = not player.thornsAssignment
-            self.assignments.profile.thorns[player.guid] = player.thornsAssignment
+            self.assignmentsDb.profile.thorns[player.guid] = player.thornsAssignment
         end
     end
 
     self:UIUpdateAllGroups(false)
+end
+
+function DruidPower:NotifyOptionChanged()
+    AceConfigRegistry:NotifyChange(DruidPower.name)
 end

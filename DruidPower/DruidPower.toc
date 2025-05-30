@@ -20,8 +20,11 @@ Libs\AceConfig-3.0\AceConfig-3.0.xml
 Libs\AceComm-3.0\AceComm-3.0.xml
 Libs\AceTimer-3.0\AceTimer-3.0.xml
 Libs\AceBucket-3.0\AceBucket-3.0.xml
+Libs\AceGUI-3.0-SharedMediaWidgets\widget.xml
+Libs\LibSharedMedia-3.0\lib.xml
 
 main.lua
 constants.lua
 utils.lua
 gui.lua
+gui_options.lua

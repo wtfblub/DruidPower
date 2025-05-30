@@ -1,10 +1,12 @@
+local LSM = LibStub("LibSharedMedia-3.0")
+
 function DruidPower:UICreate()
     local header = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     header:ClearAllPoints()
     header:SetPoint(
-        self.settings.profile.framePos.point,
-        self.settings.profile.framePos.x,
-        self.settings.profile.framePos.y
+        self.optionsDb.profile.gui.position.point,
+        self.optionsDb.profile.gui.position.x,
+        self.optionsDb.profile.gui.position.y
     )
     header:SetSize(85, 15)
     header:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8" })
@@ -26,10 +28,11 @@ function DruidPower:UICreate()
     header:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local point, _, _, x, y = self:GetPoint()
-        DruidPower.settings.profile.framePos = { point = point, x = x, y = y }
+        DruidPower.optionsDb.profile.gui.position = { point = point, x = x, y = y }
+        DruidPower:NotifyOptionChanged()
     end)
 
-    if not self.settings.profile.showAnchor then
+    if not self.optionsDb.profile.showAnchor then
         header:Hide()
     end
 
@@ -37,7 +40,8 @@ function DruidPower:UICreate()
     headerText:SetPoint("CENTER", header)
     headerText:SetJustifyH("CENTER")
     headerText:SetJustifyV("MIDDLE")
-    headerText:SetText("DruidPower")
+    headerText:SetText(DruidPower.name)
+    header.headerText = headerText
 
     local mainFrame = CreateFrame("Frame", "DruidPowerMainFrame", UIParent, "BackdropTemplate")
     mainFrame.header = header
@@ -45,6 +49,7 @@ function DruidPower:UICreate()
     mainFrame:SetSize(100, 100)
 
     self.UIMainFrame = mainFrame
+    mainFrame.groups = {}
 
     local numMembersPerParty = MAX_PARTY_MEMBERS + 1
     local numParties = MAX_RAID_MEMBERS / numMembersPerParty
@@ -56,7 +61,11 @@ function DruidPower:UICreate()
                 i, mainFrame, "BOTTOM", mainFrame["group" .. (i - 1)], "TOP"
             )
         end
+
+        table.insert(mainFrame.groups, mainFrame["group" .. i])
     end
+
+    self:UIUpdateStyle()
 end
 
 function DruidPower:UICreateGroupButton(group, parent, point, relativeTo, relativePoint)
@@ -70,16 +79,7 @@ function DruidPower:UICreateGroupButton(group, parent, point, relativeTo, relati
 
     frame:SetPoint(point, relativeTo, relativePoint)
     frame:SetSize(115, 34)
-    frame:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true,
-        tileEdge = true,
-        tileSize = 8,
-        edgeSize = 8,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
-    })
-    frame:SetBackdropColor(unpack(DruidPower.Constants.UI.Colors.MissingBuff))
+    frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateBad))
     frame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     frame:EnableMouseWheel(true)
     frame:SetAttribute("type", "macro")
@@ -104,7 +104,7 @@ function DruidPower:UICreateGroupButton(group, parent, point, relativeTo, relati
     markIcon.tex:SetAllPoints()
     markIcon.tex:SetTexture("Interface\\Icons\\Spell_nature_regeneration")
 
-    local markTimer = markIcon:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local markTimer = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     frame.markTimer = markTimer
     markTimer:SetPoint("LEFT", markIcon, "RIGHT", 3, 0)
     markTimer:SetJustifyH("RIGHT")
@@ -116,7 +116,7 @@ function DruidPower:UICreateGroupButton(group, parent, point, relativeTo, relati
     -- markTimer2:SetJustifyH("RIGHT")
     -- markTimer2:SetText("30:00")
 
-    local markMissing = markIcon:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local markMissing = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     frame.markMissing = markMissing
     markMissing:SetPoint("TOP", markIcon, "BOTTOM", 0, -1)
     markMissing:SetText("2")
@@ -130,13 +130,13 @@ function DruidPower:UICreateGroupButton(group, parent, point, relativeTo, relati
     thornsIcon.tex:SetAllPoints()
     thornsIcon.tex:SetTexture("Interface\\Icons\\Spell_nature_thorns")
 
-    local thornsTimer = thornsIcon:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local thornsTimer = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     frame.thornsTimer = thornsTimer
     thornsTimer:SetPoint("RIGHT", thornsIcon, "LEFT", -3, 0)
     thornsTimer:SetJustifyH("LEFT")
     thornsTimer:SetText("10:00")
 
-    local thornsMissing = thornsIcon:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local thornsMissing = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     frame.thornsMissing = thornsMissing
     thornsMissing:SetPoint("TOP", thornsIcon, "BOTTOM", 0, -1)
     thornsMissing:SetText("2")
@@ -184,16 +184,7 @@ function DruidPower:UICreatePlayerButton(group, memberIndex, name, parent, point
     frame.memberIndex = memberIndex
     frame:SetPoint(point, relativeTo, relativePoint)
     frame:SetSize(115, 34)
-    frame:SetBackdrop({
-        bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-        edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-        tile = true,
-        tileEdge = true,
-        tileSize = 8,
-        edgeSize = 8,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
-    })
-    frame:SetBackdropColor(unpack(DruidPower.Constants.UI.Colors.MissingBuff))
+    frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateBad))
     frame:SetFrameStrata("TOOLTIP")
     frame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     frame:EnableMouseWheel(true)
@@ -214,7 +205,7 @@ function DruidPower:UICreatePlayerButton(group, memberIndex, name, parent, point
     markIcon.tex:SetAllPoints()
     markIcon.tex:SetTexture("Interface\\Icons\\Spell_nature_regeneration")
 
-    local markTimer = markIcon:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local markTimer = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     frame.markTimer = markTimer
     markTimer:SetPoint("LEFT", markIcon, "RIGHT", 3, 0)
     markTimer:SetJustifyH("LEFT")
@@ -228,7 +219,7 @@ function DruidPower:UICreatePlayerButton(group, memberIndex, name, parent, point
     thornsIcon.tex:SetAllPoints()
     thornsIcon.tex:SetTexture("Interface\\Icons\\Spell_nature_thorns")
 
-    local thornsTimer = thornsIcon:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    local thornsTimer = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     frame.thornsTimer = thornsTimer
     thornsTimer:SetPoint("LEFT", thornsIcon, "RIGHT", 3, 0)
     thornsTimer:SetJustifyH("LEFT")
@@ -251,7 +242,7 @@ function DruidPower:UICreatePlayerButton(group, memberIndex, name, parent, point
     statusText:SetPoint("RIGHT", rangeText, "LEFT", -2, 0)
     statusText:SetJustifyH("RIGHT")
     statusText:SetText("D")
-    statusText:SetTextColor(unpack(DruidPower.Constants.UI.Colors.Status))
+    statusText:SetTextColor(unpack(DruidPower.optionsDb.profile.colors.unitStatus))
 
     local roleIcon = CreateFrame("Frame", nil, frame)
     frame.roleIcon = roleIcon
@@ -395,11 +386,11 @@ function DruidPower:UIUpdateGroup(group, isRosterUpdate)
     end
 
     if numTotalHasBuff == numTotalNeedBuff then
-        frame:SetBackdropColor(unpack(DruidPower.Constants.UI.Colors.HasBuff))
+        frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateGood))
     elseif numTotalHasBuff == 0 then
-        frame:SetBackdropColor(unpack(DruidPower.Constants.UI.Colors.MissingBuff))
+        frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateBad))
     else
-        frame:SetBackdropColor(unpack(DruidPower.Constants.UI.Colors.SomeHasBuff))
+        frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateSome))
     end
 
     for buffIndex, _ in pairs(DruidPower.Constants.Buffs) do
@@ -465,6 +456,17 @@ function DruidPower:UIUpdateGroup(group, isRosterUpdate)
             end
         end
     end
+
+    if not self.optionsDb.profile.gui.showNumMissing then
+        frame.markMissing:Hide()
+        frame.thornsMissing:Hide()
+    end
+
+    if self.optionsDb.profile.gui.showGroupNumber then
+        frame.groupText:Show()
+    else
+        frame.groupText:Hide()
+    end
 end
 
 function DruidPower:UIUpdatePlayer(player, isRosterUpdate)
@@ -493,15 +495,16 @@ function DruidPower:UIUpdatePlayer(player, isRosterUpdate)
     frame.nameText:SetText("|c" .. colorHex .. name .. "|r")
 
     if player.isInRange then
-        frame.rangeText:SetTextColor(unpack(DruidPower.Constants.UI.Colors.InRange))
+        frame.rangeText:SetTextColor(unpack(DruidPower.optionsDb.profile.colors.unitInRange))
     else
         if player.isVisible then
-            frame.rangeText:SetTextColor(unpack(DruidPower.Constants.UI.Colors.Visible))
+            frame.rangeText:SetTextColor(unpack(DruidPower.optionsDb.profile.colors.unitVisible))
         else
-            frame.rangeText:SetTextColor(unpack(DruidPower.Constants.UI.Colors.OutOfRange))
+            frame.rangeText:SetTextColor(unpack(DruidPower.optionsDb.profile.colors.unitOutOfRange))
         end
     end
 
+    frame.statusText:SetTextColor(unpack(DruidPower.optionsDb.profile.colors.unitStatus))
     if player.isDead then
         frame.statusText:SetText("D")
         frame.statusText:Show()
@@ -523,11 +526,11 @@ function DruidPower:UIUpdatePlayer(player, isRosterUpdate)
     local thornsBuff = player.buffs[DRUIDPOWER_BUFFINDEX_THORNS]
 
     if (markBuff or giftBuff) and (thornsBuff or not player.thornsAssignment) then
-        frame:SetBackdropColor(unpack(DruidPower.Constants.UI.Colors.HasBuff))
+        frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateGood))
     elseif (markBuff or giftBuff) or (thornsBuff and player.thornsAssignment) then
-        frame:SetBackdropColor(unpack(DruidPower.Constants.UI.Colors.SomeHasBuff))
+        frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateSome))
     else
-        frame:SetBackdropColor(unpack(DruidPower.Constants.UI.Colors.MissingBuff))
+        frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateBad))
     end
 
     if markBuff or giftBuff then
@@ -736,4 +739,71 @@ function DruidPower:UIPlayerPreClick(frame)
         end
         frame:SetAttribute("macrotext2", macro)
     end
+end
+
+function DruidPower:UIUpdateAnchor()
+    self.UIMainFrame.header:ClearAllPoints()
+    self.UIMainFrame.header:SetPoint(
+        self.optionsDb.profile.gui.position.point,
+        self.optionsDb.profile.gui.position.x,
+        self.optionsDb.profile.gui.position.y
+    )
+
+    if self.optionsDb.profile.showAnchor then
+        self.UIMainFrame.header:Show()
+    else
+        self.UIMainFrame.header:Hide()
+    end
+end
+
+function DruidPower:UIUpdateStyle()
+    local function ChangeFont(frame, font)
+        if not frame or not font then
+            return
+        end
+
+        if frame:GetObjectType() == "FontString" then
+            local _, fontSize, fontStyle = frame:GetFont()
+            frame:SetFont(font, fontSize, fontStyle)
+        else
+            for i = 1, frame:GetNumRegions() do
+                local region = select(i, frame:GetRegions())
+                if region and region:GetObjectType() == "FontString" then
+                    local _, fontSize, fontStyle = region:GetFont()
+                    region:SetFont(font, fontSize, fontStyle)
+                end
+            end
+        end
+    end
+    local font = LSM:Fetch("font", self.optionsDb.profile.gui.style.font)
+    local backdrop = {
+        bgFile = LSM:Fetch("statusbar", self.optionsDb.profile.gui.style.background.texture),
+        edgeFile = LSM:Fetch("border", self.optionsDb.profile.gui.style.border.texture),
+        tile = false,
+        tileSize = 16,
+        tileEdge = false,
+        edgeSize = self.optionsDb.profile.gui.style.border.size,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    }
+
+    if not backdrop.bgFile then
+        backdrop.bgFile = "Interface\\Tooltips\\UI-Tooltip-Background"
+    end
+
+    ChangeFont(self.UIMainFrame.header, font)
+
+    for _, group in pairs(self.UIMainFrame.groups) do
+        group:SetBackdrop(backdrop)
+        group:SetBackdropBorderColor(unpack(self.optionsDb.profile.gui.style.border.color))
+        ChangeFont(group, font)
+
+        for _, player in pairs(group.players) do
+            player:SetBackdrop(backdrop)
+            player:SetBackdropBorderColor(unpack(self.optionsDb.profile.gui.style.border.color))
+            ChangeFont(player, font)
+        end
+    end
+
+
+    self:UIUpdateAllGroups()
 end
