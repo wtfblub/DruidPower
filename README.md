@@ -14,6 +14,7 @@ Raid/Group Druid buff helper. Heavily inspired by PallyPower.
   - Red: Everyone is missing buffs
   - Yellow: Some are missing buffs
   - Green: Everyone is buffed
+  - Players that are dead, offline or not in render range during combat will be ignored
 - Number bottom center is the group number
 - Yellow number below the buff icons indicates how many people are missing that buff
 - Duration displays the lowest duration in that group

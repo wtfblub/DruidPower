@@ -311,8 +311,6 @@ function DruidPower:UIUpdateAllGroups(isRosterUpdate)
 end
 
 function DruidPower:UIUpdateGroup(group, isRosterUpdate)
-    local numMembersPerParty = MAX_PARTY_MEMBERS + 1
-
     local frame = self.UIMainFrame["group" .. group]
     if not frame then
         return
@@ -341,17 +339,26 @@ function DruidPower:UIUpdateGroup(group, isRosterUpdate)
             for buffIndex, _ in pairs(DruidPower.Constants.Buffs) do
                 local buff = player.buffs[buffIndex]
 
-                -- Do not track thorns when their assignment is turned off
-                local shouldTrackBuff = buffIndex ~= DRUIDPOWER_BUFFINDEX_THORNS or player.thornsAssignment
+                local shouldTrackBuff = true
+                if buffIndex == DRUIDPOWER_BUFFINDEX_THORNS then
+                    -- Do not track thorns when their assignment is turned off
+                    shouldTrackBuff = player.thornsAssignment
+                end
+
+                -- Ignore players that are dead, offline or not in render range during combat
+                if InCombatLockdown() and (player.isDead or not player.online or not player.isVisible) then
+                    shouldTrackBuff = false
+                end
+
                 if shouldTrackBuff and buffIndex ~= DRUIDPOWER_BUFFINDEX_GIFT then
                     buffInfo[buffIndex].numShouldHaveBuff = buffInfo[buffIndex].numShouldHaveBuff + 1
                 end
 
-                if buffIndex == DRUIDPOWER_BUFFINDEX_GIFT then
-                    buffIndex = DRUIDPOWER_BUFFINDEX_MARK
-                end
-
                 if shouldTrackBuff and buff then
+                    -- Track gift as mark
+                    if buffIndex == DRUIDPOWER_BUFFINDEX_GIFT then
+                        buffIndex = DRUIDPOWER_BUFFINDEX_MARK
+                    end
                     buffInfo[buffIndex].numHasBuff = buffInfo[buffIndex].numHasBuff + 1
 
                     local duration = self.Utils:GetBuffDurationLeft(buff)
@@ -385,7 +392,7 @@ function DruidPower:UIUpdateGroup(group, isRosterUpdate)
         numTotalNeedBuff = numTotalNeedBuff + info.numShouldHaveBuff
     end
 
-    if numTotalHasBuff == numTotalNeedBuff then
+    if numTotalHasBuff >= numTotalNeedBuff then
         frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateGood))
     elseif numTotalHasBuff == 0 then
         frame:SetBackdropColor(unpack(DruidPower.optionsDb.profile.colors.buffStateBad))
