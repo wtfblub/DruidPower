@@ -231,7 +231,7 @@ DruidPower.Constants.Options = {
                     args = {
                         good = {
                             order = 1,
-                            name = "Everyone has buffs",
+                            name = "Fully Buffed",
                             type = "color",
                             hasAlpha = true,
                             get = function()
@@ -245,7 +245,7 @@ DruidPower.Constants.Options = {
                         },
                         some = {
                             order = 2,
-                            name = "Some have buffs",
+                            name = "Partially Buffed",
                             type = "color",
                             hasAlpha = true,
                             get = function()
@@ -259,7 +259,7 @@ DruidPower.Constants.Options = {
                         },
                         bad = {
                             order = 3,
-                            name = "None has buffs",
+                            name = "None Buffed",
                             type = "color",
                             hasAlpha = true,
                             get = function()
