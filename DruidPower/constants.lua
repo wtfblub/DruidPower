@@ -43,6 +43,8 @@ DruidPower.Constants.DefaultDruidPowerAssignments = {
     }
 }
 
+DruidPower.Constants.ThornsAssignmentTimeout = 14 * 24 * 60 * 60 -- 2 weeks
+
 DRUIDPOWER_BUFFINDEX_MARK = 1
 DRUIDPOWER_BUFFINDEX_GIFT = 2
 DRUIDPOWER_BUFFINDEX_THORNS = 3

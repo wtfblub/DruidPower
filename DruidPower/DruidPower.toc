@@ -22,6 +22,7 @@ Libs\AceTimer-3.0\AceTimer-3.0.xml
 Libs\AceBucket-3.0\AceBucket-3.0.xml
 Libs\AceGUI-3.0-SharedMediaWidgets\widget.xml
 Libs\LibSharedMedia-3.0\lib.xml
+Libs\LibClassicDurations\LibClassicDurations.xml
 
 main.lua
 constants.lua

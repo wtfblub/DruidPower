@@ -20,6 +20,17 @@ function DruidPower:OnInitialize()
     self.roster = {}
     self.isDruid = select(2, UnitClass("player")) == "DRUID"
     self:RegisterChatCommand(string.lower(DruidPower.name), "OnCommand")
+    LibStub("LibClassicDurations"):Register(DruidPower.name)
+
+    -- Cleanup old assignments
+    if self.assignmentsDb.profile.thorns then
+        for guid, _ in pairs(self.assignmentsDb.profile.thorns) do
+            local v = self.assignmentsDb.profile.thorns[guid]
+            if not v or type(v) ~= "number" or (time() - v >= DruidPower.Constants.ThornsAssignmentTimeout) then
+                self.assignmentsDb.profile.thorns[guid] = nil
+            end
+        end
+    end
 end
 
 function DruidPower:OnEnable()
@@ -28,7 +39,6 @@ function DruidPower:OnEnable()
         return
     end
 
-    self:RegisterEvent("UNIT_AURA")
     self:RegisterBucketEvent(
         {
             "PLAYER_ENTERING_WORLD",
@@ -82,73 +92,12 @@ function DruidPower:OnCommand(input)
     end
 end
 
-function DruidPower:UNIT_AURA(event, target, info)
-    local player = self:FindPlayerInRosterByUnitId(target)
-    if not player then
-        return
-    end
-
-    if not info.isFullUpdate then
-        player.buffs = player.buffs or {}
-        player.buffsByInstanceId = player.buffsByInstanceId or {}
-        local shouldSkip = true
-
-        if info.addedAuras then
-            for _, aura in pairs(info.addedAuras) do
-                local isBuffOfInterest, buffIndex = self.Utils:IsBuffOfInterest(aura.spellId)
-                if isBuffOfInterest then
-                    shouldSkip = false
-                    player.buffsByInstanceId[aura.auraInstanceID] = aura
-                    player.buffs[buffIndex] = aura
-                end
-            end
-        end
-
-        if info.updatedAuraInstanceIDs then
-            for _, auraInstanceId in pairs(info.updatedAuraInstanceIDs) do
-                if player.buffsByInstanceId[auraInstanceId] then
-                    shouldSkip = false
-                    local aura = C_UnitAuras.GetAuraDataByAuraInstanceID(target, auraInstanceId)
-                    local buffIndex = self.Utils:GetBuffIndexFromSpellId(aura.spellId)
-                    if buffIndex then
-                        player.buffs[buffIndex] = aura
-                    end
-                    player.buffsByInstanceId[aura.auraInstanceID] = aura
-                end
-            end
-        end
-
-        if info.removedAuraInstanceIDs then
-            for _, auraInstanceId in pairs(info.removedAuraInstanceIDs) do
-                local aura = player.buffsByInstanceId[auraInstanceId]
-                if aura then
-                    shouldSkip = false
-                    local buffIndex = self.Utils:GetBuffIndexFromSpellId(aura.spellId)
-                    if buffIndex then
-                        local oldAura = player.buffs[buffIndex]
-                        if not oldAura or oldAura.auraInstanceID == auraInstanceId then
-                            player.buffs[buffIndex] = nil
-                        end
-                    end
-                    player.buffsByInstanceId[auraInstanceId] = nil
-                end
-            end
-        end
-
-        if shouldSkip then
-            return
-        end
-    end
-
-    if info.isFullUpdate then
-        self:ScanUnitBuffs(player)
-    end
-end
-
 function DruidPower:ScanTimer()
+    local now = time()
     for key, value in pairs(self.roster) do
         if value then
-            self:ScanUnit(value)
+            self:ScanUnit(value, now)
+            self:ScanUnitBuffs(value)
         end
     end
 
@@ -165,6 +114,7 @@ function DruidPower:RosterUpdate()
     local rosterUpdatePerf = DruidPower.Utils:PerformanceProfile("RosterUpdate")
     local scanUnitBuffsPerf = DruidPower.Utils:PerformanceProfile("ScanUnitBuffs_Total")
     local scanUnitPerf = DruidPower.Utils:PerformanceProfile("ScanUnit_Total")
+    local now = time()
 
     table.wipe(self.roster)
 
@@ -197,7 +147,7 @@ function DruidPower:RosterUpdate()
                 scanUnitBuffsPerf:Add()
 
                 scanUnitPerf:Restart()
-                self:ScanUnit(self.roster[i])
+                self:ScanUnit(self.roster[i], now)
                 scanUnitPerf:Add()
             end
         end
@@ -220,7 +170,7 @@ function DruidPower:RosterUpdate()
                     scanUnitBuffsPerf:Add()
 
                     scanUnitPerf:Restart()
-                    self:ScanUnit(self.roster[i + 1])
+                    self:ScanUnit(self.roster[i + 1], now)
                     scanUnitPerf:Add()
                 end
             end
@@ -239,7 +189,7 @@ function DruidPower:RosterUpdate()
         scanUnitBuffsPerf:Add()
 
         scanUnitPerf:Restart()
-        self:ScanUnit(self.roster[1])
+        self:ScanUnit(self.roster[1], now)
         scanUnitPerf:Add()
     end
 
@@ -303,9 +253,7 @@ end
 
 function DruidPower:ScanUnitBuffs(player)
     player.buffs = player.buffs or {}
-    player.buffsByInstanceId = player.buffsByInstanceId or {}
     table.wipe(player.buffs)
-    table.wipe(player.buffsByInstanceId)
 
     local auras = DruidPower.Utils:GetUnitBuffs(player.id)
     for buffIndex, allBuffRanks in pairs(DruidPower.Constants.Buffs) do
@@ -319,14 +267,12 @@ function DruidPower:ScanUnitBuffs(player)
 
         if aura then
             player.buffs[buffIndex] = aura
-            player.buffsByInstanceId[aura.auraInstanceID] = aura
         end
     end
 end
 
-function DruidPower:ScanUnit(player)
+function DruidPower:ScanUnit(player, now)
     player.buffs = player.buffs or {}
-    player.buffsByInstanceId = player.buffsByInstanceId or {}
     player.online = UnitIsConnected(player.id)
     player.isDead = UnitIsDeadOrGhost(player.id)
     if not IsInRaid() then
@@ -336,9 +282,12 @@ function DruidPower:ScanUnit(player)
     player.isVisible = UnitIsVisible(player.id)
     player.isAFK = UnitIsAFK(player.id)
 
-    player.thornsAssignment = self.assignmentsDb.profile.thorns[player.guid]
-    if player.thornsAssignment == nil then
+    local thornsAssignment = self.assignmentsDb.profile.thorns[player.guid]
+    if thornsAssignment == nil then
         player.thornsAssignment = false
+    else
+        player.thornsAssignment = true
+        self.assignmentsDb.profile.thorns[player.guid] = now or time()
     end
 end
 
@@ -374,21 +323,27 @@ function DruidPower:FindPlayersInRosterByUiIndex(group)
 end
 
 function DruidPower:ToggleThornsAssignmentForUiGroup(uiGroupIndex)
-    for _, player in pairs(self.roster) do
-        if player.uiGroupIndex == uiGroupIndex then
-            player.thornsAssignment = not player.thornsAssignment
-            self.assignmentsDb.profile.thorns[player.guid] = player.thornsAssignment
-        end
-    end
-
-    self:UIUpdateAllGroups(false)
+    self:ToggleThornsAssignment(function(player)
+        return player.uiGroupIndex == uiGroupIndex
+    end)
 end
 
 function DruidPower:ToggleThornsAssignmentForUiPlayer(uiGroupIndex, uiMemberIndex)
+    self:ToggleThornsAssignment(function(player)
+        return player.uiGroupIndex == uiGroupIndex and player.uiMemberIndex == uiMemberIndex
+    end)
+end
+
+function DruidPower:ToggleThornsAssignment(filter)
     for _, player in pairs(self.roster) do
-        if player.uiGroupIndex == uiGroupIndex and player.uiMemberIndex == uiMemberIndex then
+        if filter(player) then
             player.thornsAssignment = not player.thornsAssignment
-            self.assignmentsDb.profile.thorns[player.guid] = player.thornsAssignment
+            local now = time() or 0
+            if player.thornsAssignment and now > 0 then
+                self.assignmentsDb.profile.thorns[player.guid] = now
+            else
+                self.assignmentsDb.profile.thorns[player.guid] = nil
+            end
         end
     end
 

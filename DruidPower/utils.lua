@@ -1,3 +1,19 @@
+local UnitAura = LibStub("LibClassicDurations").UnitAuraWrapper
+
+local function UnitBuff(unit, index)
+    local name, _, _, _, duration, expirationTime, _, _, _, spellId = UnitAura(unit, index, "HELPFUL")
+    if name then
+        return {
+            name = name,
+            duration = duration,
+            expirationTime = expirationTime,
+            spellId = spellId,
+        }
+    end
+
+    return nil
+end
+
 DruidPower.Utils = {}
 
 function DruidPower.Utils:ShortenString(str, length)
@@ -15,11 +31,11 @@ end
 function DruidPower.Utils:GetUnitBuffs(unitId)
     local auras = {}
     local i = 1
-    local aura = C_UnitAuras.GetBuffDataByIndex(unitId, i)
+    local aura = UnitBuff(unitId, i)
     while aura do
         auras[aura.spellId] = aura
         i = i + 1
-        aura = C_UnitAuras.GetBuffDataByIndex(unitId, i)
+        aura = UnitBuff(unitId, i)
     end
 
     return auras
